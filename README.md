@@ -36,11 +36,11 @@ A simple Flask web application that performs CRUD (Create, Read, Update, Delete)
    ```
 
 4. **Configure environment variables**
-   - Copy `.env.example` to `.env`
+   - Copy `.env.example` from `python_apps/` to `.env`
    ```bash
-   cp .env.example .env
+   cp python_apps/.env.example python_apps/.env
    ```
-   - Edit `.env` and fill in your MySQL credentials:
+   - Edit `python_apps/.env` and fill in your MySQL credentials:
    ```
    MYSQL_HOST=localhost
    MYSQL_USER=root
@@ -50,22 +50,61 @@ A simple Flask web application that performs CRUD (Create, Read, Update, Delete)
 
 5. **Set up the database**
    ```bash
-   python setup_db.py
+   python python_apps/setup_db.py
    ```
 
 ## Running the Application
 
 1. **Start the Flask development server**
    ```bash
-   python app.py
+   python python_apps/app.py
    ```
    The API will be available at `http://localhost:5000`
 
 2. **Test the API (optional)**
    In another terminal:
    ```bash
-   python tests.py
+   python python_apps/tests.py
    ```
+
+## Code Quality & Security
+
+This project includes automated checks for code security, linting, and formatting.
+
+### Local Development Checks
+
+Run these commands locally before committing:
+
+```bash
+# Run all linting and security checks
+black python_apps/          # Format code
+isort python_apps/          # Sort imports
+flake8 python_apps/         # Lint code
+pylint python_apps/         # Code analysis
+bandit -r python_apps/      # Security scan
+safety check                # Check dependencies for vulnerabilities
+```
+
+### Automatic CI/CD Checks
+
+A GitHub Actions workflow automatically runs on every push and pull request:
+
+- **Bandit**: Security issue scanner
+- **Safety**: Dependency vulnerability checker
+- **Black**: Code formatter verification
+- **isort**: Import sorting verification
+- **Flake8**: Style guide enforcement and linting
+- **Pylint**: Code quality analysis
+
+**Supported Python Versions**: 3.9, 3.10, 3.11
+
+The workflow is defined in [.github/workflows/security-lint.yml](.github/workflows/security-lint.yml)
+
+### Configuration Files
+
+- `.flake8` - Flake8 linting configuration
+- `.pylintrc` - Pylint configuration
+- `pyproject.toml` - Black, isort, and Bandit configuration
 
 ## API Endpoints
 
@@ -132,13 +171,20 @@ curl -X DELETE http://localhost:5000/users/1
 
 ```
 Python-MySQL/
-├── app.py              # Main Flask application with CRUD endpoints
-├── setup_db.py         # Database initialization script
-├── tests.py            # API testing script
-├── requirements.txt    # Python dependencies
-├── .env.example        # Example environment variables
-├── .env                # Environment variables (create from .env.example)
-└── README.md          # This file
+├── .github/
+│   └── workflows/
+│       └── security-lint.yml    # GitHub Actions CI/CD workflow
+├── python_apps/
+│   ├── app.py                   # Main Flask application with CRUD endpoints
+│   ├── setup_db.py              # Database initialization script
+│   ├── tests.py                 # API testing script
+│   └── .env.example             # Example environment variables
+├── .flake8                       # Flake8 linting configuration
+├── .gitignore                    # Git ignore rules
+├── .pylintrc                     # Pylint configuration
+├── pyproject.toml                # Black, isort, and tool configurations
+├── requirements.txt              # Python dependencies (dev + production)
+└── README.md                     # This file
 ```
 
 ## Database Schema

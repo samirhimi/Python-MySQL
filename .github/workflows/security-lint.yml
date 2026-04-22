@@ -1,0 +1,104 @@
+name: Security & Linting Check
+
+on:
+  push:
+    branches: [ main, develop, "feature/**" ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  security-and-lint:
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11']
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Cache pip packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install flake8 bandit black isort pylint safety
+    
+    - name: Run Bandit Security Scan
+      run: |
+        echo "Running Bandit security scan..."
+        bandit -r python_apps/ -f json -o bandit-report.json || true
+        bandit -r python_apps/ -f txt
+      continue-on-error: false
+    
+    - name: Run Safety Check (Dependency Vulnerabilities)
+      run: |
+        echo "Checking dependencies for known vulnerabilities..."
+        safety check --json || true
+        safety check
+      continue-on-error: true
+    
+    - name: Run Black Code Formatter Check
+      run: |
+        echo "Checking code formatting with Black..."
+        black --check python_apps/ || true
+      continue-on-error: false
+    
+    - name: Run isort Import Sorter Check
+      run: |
+        echo "Checking import sorting with isort..."
+        isort --check-only --diff python_apps/ || true
+      continue-on-error: false
+    
+    - name: Run Flake8 Linting
+      run: |
+        echo "Running Flake8 linting..."
+        flake8 python_apps/ \
+          --count \
+          --select=E9,F63,F7,F82 \
+          --show-source \
+          --statistics
+        flake8 python_apps/ \
+          --count \
+          --exit-zero \
+          --max-complexity=10 \
+          --max-line-length=127 \
+          --statistics
+    
+    - name: Run Pylint
+      run: |
+        echo "Running Pylint analysis..."
+        pylint python_apps/ --disable=all --enable=E,F || true
+      continue-on-error: true
+    
+    - name: Generate Report Summary
+      if: always()
+      run: |
+        echo "## Security & Linting Check Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Security checks (Bandit) completed" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Dependency vulnerability scan (Safety) completed" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Code formatting check (Black) completed" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Import sorting check (isort) completed" >> $GITHUB_STEP_SUMMARY
+        echo "✅ Linting checks (Flake8, Pylint) completed" >> $GITHUB_STEP_SUMMARY
+    
+    - name: Upload Bandit Report
+      if: always()
+      uses: actions/upload-artifact@v3
+      with:
+        name: bandit-report-${{ matrix.python-version }}
+        path: bandit-report.json
+        if-no-files-found: ignore
