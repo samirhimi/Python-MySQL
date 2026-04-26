@@ -1,0 +1,49 @@
+---
+- hosts: localhost
+  gather_facts: true
+  become: true
+  tasks:
+    - name: install docker SDK for Python
+      pip:
+        name:
+          - docker
+          - "requests<2.32.0"
+          - requests-unixsocket
+        state: present
+
+    - name: remove existing container
+      docker_container:
+        name: "{{ item }}"
+        state: absent
+      loop:
+        - python_app
+      ignore_errors: true
+
+    - name: delete old image
+      docker_image:
+        name: python_app_image
+        state: absent
+      ignore_errors: true
+
+    - name: Build docker image
+      command: docker build -t python_app_image ./python_apps
+
+    - name: Run docker container
+      docker_container:
+        name: python_app
+        image: python_app_image
+        state: started
+        ports:
+          - "5000:5000"
+        network_mode: bridge
+        privileged: false
+        restart_policy: no  
+
+    - name: check if the container is running
+      docker_container_info:
+        name: python_app
+      register: container_info
+
+    - name: print container status
+      debug:
+        msg: "Container 'python_app' is {{ container_info.container.State.Status }}"  
