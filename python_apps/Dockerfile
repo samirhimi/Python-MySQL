@@ -17,15 +17,8 @@ RUN pip install --upgrade pip setuptools wheel && \
 COPY . .
 
 RUN chown -R appuser:appuser /app
+
 USER appuser
-
-ENV MYSQL_USER=root  
-
-ENV MYSQL_PASSWORD=your_password
-
-ENV MYSQL_HOST=172.17.0.2
-
-ENV MYSQL_DATABASE=crud_db
 
 EXPOSE 5000
 
